@@ -17,9 +17,9 @@ type Op struct {
 	Elem   interface{} // Actual value to be inserted or deleted
 }
 
-//  Returns a minimal list of differences between 2 lists e and f
-//  requring O(min(len(e),len(f))) space and O(min(len(e),len(f)) * D)
-//  worst-case execution time where D is the number of differences.
+// Returns a minimal list of differences between 2 lists e and f
+// requiring O(min(len(e),len(f))) space and O(min(len(e),len(f)) * D)
+// worst-case execution time where D is the number of differences.
 func Diff(e, f []interface{}, equals func(interface{}, interface{}) bool) []Op {
 	return diffInternal(e, f, equals, 0, 0)
 }
@@ -34,7 +34,7 @@ func diffInternal(e, f []interface{}, equals func(interface{}, interface{}) bool
 		g := make([]int, Z)
 		p := make([]int, Z)
 
-		hMax := ((L/2 + toInt(L%2 != 0)) + 1)
+		hMax := L/2 + L%2 + 1
 		for h := 0; h < hMax; h++ {
 			for r := 0; r < 2; r++ {
 				var c, d []int
@@ -54,10 +54,10 @@ func diffInternal(e, f []interface{}, equals func(interface{}, interface{}) bool
 				kMax := h - 2*max(0, h-N) + 1
 				for k := kMin; k < kMax; k += 2 {
 					var a int
-					if k == -h || k != h && c[absmod((k-1), Z)] < c[absmod((k+1), Z)] {
-						a = c[absmod((k+1), Z)]
+					if k == -h || k != h && c[pyMod((k-1), Z)] < c[pyMod((k+1), Z)] {
+						a = c[pyMod((k+1), Z)]
 					} else {
-						a = c[absmod((k-1), Z)] + 1
+						a = c[pyMod((k-1), Z)] + 1
 					}
 					b := a - k
 					s, t := a, b
@@ -65,9 +65,9 @@ func diffInternal(e, f []interface{}, equals func(interface{}, interface{}) bool
 					for a < N && b < M && equals(e[(1-o)*N+m*a+(o-1)], f[(1-o)*M+m*b+(o-1)]) {
 						a, b = a+1, b+1
 					}
-					c[absmod(k, Z)] = a
+					c[pyMod(k, Z)] = a
 					z := -(k - w)
-					if absmod(L, 2) == o && z >= -(h-o) && z <= h-o && c[absmod(k, Z)]+d[absmod(z, Z)] >= N {
+					if pyMod(L, 2) == o && z >= -(h-o) && z <= h-o && c[pyMod(k, Z)]+d[pyMod(z, Z)] >= N {
 						var D, x, y, u, v int
 						if o == 1 {
 							D = 2*h - 1
@@ -127,29 +127,19 @@ func min(x, y int) int {
 	}
 }
 
-func toInt(b bool) int {
-	if b {
-		return 1
-	} else {
-		return 0
-	}
-}
-
 /**
  * The remainder op in python always matches the sign of the _denominator_
+ * e.g -1%3 = 2.
  * In golang it matches the sign of the numerator.
  * See https://en.wikipedia.org/wiki/Modulo_operation#Variants_of_the_definition
+ * Since we always have a positive denominator here, we can emulate the
+ * pyMod x%y as (x+y) % y
  */
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	} else {
-		return x
-	}
+func pyMod(x, y int) int {
+	return (x + y) % y
 }
-func absmod(x, y int) int {
-	return abs(x % y)
-}
+
+// Let us map element in same way as in
 
 // Convenient wrapper for string lists
 func DiffStr(e, f []string) []Op {
